@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Factulist – History & Analytics</title>
+    <!-- Bootstrap + Chart.js -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-light">
+    <div class="container mt-5">
+        <h1 class="mb-4">Factulist – Report History</h1>
+        <a href="/" class="btn btn-primary mb-3">← Back to Analyzer</a>
+
+        <!-- Charts -->
+        <div class="row mb-5">
+            <div class="col-md-6">
+                <div class="card p-3">
+                    <h5 class="text-center">Credibility Distribution</h5>
+                    <canvas id="credibilityChart"></canvas>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card p-3">
+                    <h5 class="text-center">Bias Distribution</h5>
+                    <canvas id="biasChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Table -->
+        <div class="card p-3">
+            <h4 class="mb-3">Report Log</h4>
+            <table class="table table-bordered table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Article Link</th>
+                        <th>Credibility</th>
+                        <th>Bias</th>
+                        <th>Recommendation</th>
+                        <th>Summary</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for report in reports %}
+                    <tr>
+                        <td>
+                            {% if report.article_link != "N/A" %}
+                                <a href="{{ report.article_link }}" target="_blank">{{ report.article_link }}</a>
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td>
+                        <td>{{ report.credibility_score }}</td>
+                        <td>{{ report.bias }} ({{ report.bias_confidence }})</td>
+                        <td>{{ report.recommendation }}</td>
+                        <td>{{ report.summary }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Chart.js Script -->
+    <script>
+        // Pass reports from Flask to JS
+        const reports = {{ reports|tojson }};
+
+        // Count credibility categories
+        let credibilityCounts = { "Verified": 0, "Mostly True": 0, "Misleading": 0, "False": 0 };
+        reports.forEach(r => {
+            if (r.credibility_score?.includes("Verified")) credibilityCounts["Verified"]++;
+            else if (r.credibility_score?.includes("Mostly True")) credibilityCounts["Mostly True"]++;
+            else if (r.credibility_score?.includes("Misleading")) credibilityCounts["Misleading"]++;
+            else if (r.credibility_score?.includes("False")) credibilityCounts["False"]++;
+        });
+
+        // Count bias categories
+        let biasCounts = { "Left": 0, "Center": 0, "Right": 0, "Unknown": 0 };
+        reports.forEach(r => {
+            if ((r.bias || "").includes("Left")) biasCounts["Left"]++;
+            else if ((r.bias || "").includes("Right")) biasCounts["Right"]++;
+            else if ((r.bias || "").includes("Center") || (r.bias || "").includes("Neutral")) biasCounts["Center"]++;
+            else biasCounts["Unknown"]++;
+        });
+
+        // Credibility Pie Chart
+        new Chart(document.getElementById("credibilityChart"), {
+            type: "pie",
+            data: {
+                labels: Object.keys(credibilityCounts),
+                datasets: [{
+                    data: Object.values(credibilityCounts),
+                    backgroundColor: ["#28a745", "#0d6efd", "#fd7e14", "#dc3545"]
+                }]
+            }
+        });
+
+        // Bias Bar Chart
+        new Chart(document.getElementById("biasChart"), {
+            type: "bar",
+            data: {
+                labels: Object.keys(biasCounts),
+                datasets: [{
+                    label: "Articles",
+                    data: Object.values(biasCounts),
+                    backgroundColor: ["#0d6efd", "#6c757d", "#dc3545", "#6c757d"]
+                }]
+            },
+            options: {
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    </script>
+</body>
+</html>
