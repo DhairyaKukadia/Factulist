@@ -1,158 +1,151 @@
 # 📘 Factulist – Fake News & Bias Detector  
 
 > **Clarity in a World of Noise.**  
-Factulist is a deep-learning powered application that helps users detect **fake news**, **bias**, and **credibility of sources**.  
-It combines NLP models with a clean Bootstrap frontend, explainability features, and exportable reports – designed as both a **class project** and an **entrepreneurship MVP**.  
+Factulist is a Flask-based application that helps users detect **bias** and **credibility of sources** in news articles.  
+It combines NLP-driven heuristics with a clean Bootstrap frontend, explainability highlights, and exportable reports – designed as both a **class project** and a **practical MVP**.  
 
 ---
 
 ## 🚀 Features  
 
 ✅ **Multi-Input Support** – analyze articles via:  
-- 🔗 URL (auto-scrapes content)  
+- 🔗 URL (auto-scrapes content with newspaper3k)  
 - 📝 Raw text  
-- 📂 File upload (PDF, DOCX)  
+- 📂 File upload (`.txt` supported, PDF/DOCX planned)  
 
-✅ **Deep Learning Backend**  
-- Hugging Face transformer models for **fake news classification**  
-- Sentiment proxy for **political bias detection**  
-- Lightweight **explainability** (top tokens influencing classification)  
+✅ **Bias Detection**  
+- Highlights biased/emotional words  
+- Labels as **Neutral / Mixed / Biased**  
+- Quick notes with detected terms  
+
+✅ **Credibility Analysis**  
+- Domain reputation lookup (`domain_reputation.json`)  
+- Reference richness (number of external links)  
+- Language neutrality (emotional vs neutral tone)  
+- Visual bar chart breakdown (Chart.js)  
 
 ✅ **Analytics & History**  
-- Credibility timeline with **charts** (Chart.js)  
-- Bias distribution visualization  
-- History of all reports (stored in TinyDB)  
+- Stores last 10 reports in **TinyDB** (`data/reports.json`)  
+- History table with bias, credibility stars, highlights count, and date  
 
-✅ **Source Credibility Leaderboard**  
-- Tracks domains across reports  
-- Shows total reports + breakdown by credibility  
-- Bar and stacked charts with **pagination**  
+✅ **Comparison Mode**  
+- Compare two articles side by side  
+- Radar chart visualization for bias/credibility components  
 
 ✅ **Export & Sharing**  
-- Export reports or sources as **CSV**  
-- Download individual reports as **PDF**  
+- Download the latest report as **PDF**  
+- (Upcoming) Export history as **CSV**  
 
 ✅ **Polished Frontend**  
 - Built with **Flask + Bootstrap 5 + Chart.js**  
-- Clean responsive UI with **progress bars, badges, and charts**  
+- Responsive UI with **badges, charts, and highlights**  
 
 ---
 
 ## 📂 Project Structure  
 
-```
 Factulist/
 │── run.py                      # Flask entry point
-│── requirements.txt             # Dependencies
+│── requirements.txt            # Dependencies
+│── README.md                   # Documentation
 │
 ├── app/
-│   ├── __init__.py
-│   ├── routes.py                # Routes (/, /check, /history, /sources, exports)
-│   │
-│   ├── models/                  # Deep learning models
-│   │   ├── credibility_checker.py
-│   │   └── bias_detector.py
-│   │
-│   ├── services/                # Business logic
-│   │   └── report_generator.py
-│   │
-│   ├── templates/               # Frontend
-│   │   ├── report.html          # Main analyzer
-│   │   ├── history.html         # History + charts
-│   │   └── sources.html         # Source leaderboard
-│   │
-│   ├── static/                  # CSS/JS assets (if any)
-│   └── uploads/                 # Uploaded PDF/DOCX files
+│ ├── routes.py                 # Routes (home, history, compare, about, export)
+│ │
+│ ├── models/                   # Bias & credibility logic
+│ │ ├── credibility_checker.py
+│ │ └── bias_detector.py
+│ │
+│ ├── services/                 # Report builder
+│ │ └── report_generator.py
+│ │
+│ ├── templates/                # Frontend (Jinja + Bootstrap)
+│ │ ├── base.html               # Layout + navbar
+│ │ ├── index.html              # Input form
+│ │ ├── report.html             # Analysis results + chart
+│ │ ├── history.html            # Past reports
+│ │ ├── compare.html            # Side-by-side comparison + radar chart
+│ │ └── about.html              # About/FAQ
+│ │
+│ ├── static/                   # CSS/JS assets
+│ │ └── style.css
+│ │
+│ └── uploads/                  # Uploaded files (txt for now)
 │
 ├── data/
-│   ├── reports.json             # Report history (TinyDB)
-│   └── sources.json             # Source stats (TinyDB)
-```
+│ └── reports.json              # TinyDB storage for history
 
 ---
 
 ## ⚙️ Installation & Setup  
 
 ### 1. Clone Repo  
-```bash
-git clone https://github.com/<DhairyaKukadia>/factulist.git
-cd factulist
-```
 
-### 2. Create Virtual Environment  
-```bash
+git clone https://github.com/<DhairyaKukadia>/Factulist.git
+cd Factulist
+
+### 2. Create Virtual Environment
+
 python -m venv .venv
 source .venv/bin/activate   # Linux/Mac
 .venv\Scripts\activate      # Windows (PowerShell)
-```
 
-### 3. Install Dependencies  
-```bash
+### 3. Install Dependencies
+
 pip install -r requirements.txt
-```
 
-### 4. Run App  
-```bash
+### 4. Run App
+
 python run.py
-```
-Visit 👉 `http://127.0.0.1:5000/`  
+Visit 👉 http://127.0.0.1:5000/
+
+### 📊 Usage
+**Home** (/) → Paste URL, raw text, or upload .txt → get report.
+**Report** (/report) → Shows bias, credibility, highlights, breakdown chart.
+**History** (/history) → Last 10 reports with bias/credibility preview.
+**Compare** (/compare) → Two articles side by side with radar chart.
+**Export** (/export/latest) → Download the latest report as PDF.
+
+### 📦 Dependencies
+
+Main stack:
+
+**Flask** – web framework
+**TinyDB** – lightweight JSON database
+**newspaper3k** – URL scraping
+**lxml_html_clean** – required for newspaper3k
+**reportlab** – PDF export
+**Chart.js** – interactive charts (CDN)
+**Bootstrap 5** – responsive UI
+
+### See requirements.txt for exact versions.
+
+📌 Future Enhancements
+ Export history as CSV/Excel
+
+ PDF/DOCX upload support
+
+ Source credibility leaderboard
+
+ User accounts for persistent history
+
+ SHAP/LIME for advanced explainability
+
+ Browser extension integration
+
+👨‍💻 Author
+Dhairya Kukadia – BSc Data Science, Navratna University, Vadodara
+
+Project for Deep Learning + Entrepreneurship coursework
+
+⚠️ Disclaimer
+Factulist is a project built for educational purposes.
+The results are heuristic-based indicators, not absolute truth.
+Always cross-verify important news with trusted sources.
+
 
 ---
 
-## 📊 Usage  
+This gives you the **same polished style** as the one you uploaded, but tailored exactly to your current project capabilities.  
 
-- **Home (`/`)** → Paste URL, raw text, or upload PDF/DOCX → get report.  
-- **History (`/history`)** → See past reports with pie/bar charts.  
-- **Sources (`/sources`)** → Domain leaderboard + credibility breakdown.  
-- **Exports** →  
-  - `/export/reports/csv` → all reports as CSV  
-  - `/export/sources/csv` → all sources as CSV  
-  - `/export/report/<id>/pdf` → download a single report as PDF  
-
----
-
-## 📦 Dependencies  
-
-Main stack:  
-- **Flask** – web framework  
-- **Requests + BeautifulSoup4** – scraping  
-- **Transformers + Torch** – deep learning models  
-- **pdfplumber + python-docx** – file parsing  
-- **TinyDB** – lightweight JSON database  
-- **Chart.js** – interactive charts  
-- **Bootstrap 5** – UI  
-- **pandas** – CSV export  
-- **fpdf** – PDF export  
-
-See `requirements.txt` for full list.  
-
----
-
-## 🧠 Models  
-
-- **Fake News Detection** → `mrm8488/bert-tiny-finetuned-fake-news-detection` (fallback: sentiment model)  
-- **Bias Proxy** → `distilbert-base-uncased-finetuned-sst-2-english`  
-
----
-
-## 📌 Future Enhancements  
-
-- [ ] **Authentication** → user-specific histories & roles  
-- [ ] **Fact-checking APIs** → integrate with external sources  
-- [ ] **Browser Extension** → fact-check directly while browsing  
-- [ ] **Advanced XAI** → LIME/SHAP for better explainability  
-
----
-
-## 👨‍💻 Authors  
-
-- **Dhairya Kukadia** – BSc Data Science, Navratna University, Vadodara  
-- Project for **Deep Learning + Entrepreneurship** coursework  
-
----
-
-## ⚠️ Disclaimer  
-
-Factulist is an MVP built for **educational purposes**.  
-The models provide **probabilistic estimates**, not absolute truth.  
-Always cross-verify important news with trusted sources.  
+👉 Do you want me to also create a **badged header (with shields.io)** at the top (like “Built with Flask”, “Python 3.10+”, “License: MIT”)? That makes it look even more GitHub-ready.
