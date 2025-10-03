@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Compare Two Articles</h2>
+
+    <!-- Input form -->
+    {% if not report1 and not report2 %}
+    <form method="POST">
+        <div class="row">
+            <div class="col-md-6">
+                <h5>Article 1</h5>
+                <input type="url" class="form-control mb-2" name="url1" placeholder="Paste URL for Article 1">
+                <textarea class="form-control" name="text1" rows="6" placeholder="Or paste text for Article 1"></textarea>
+            </div>
+            <div class="col-md-6">
+                <h5>Article 2</h5>
+                <input type="url" class="form-control mb-2" name="url2" placeholder="Paste URL for Article 2">
+                <textarea class="form-control" name="text2" rows="6" placeholder="Or paste text for Article 2"></textarea>
+            </div>
+        </div>
+        <div class="text-center mt-3">
+            <button type="submit" class="btn btn-primary btn-lg">Compare</button>
+        </div>
+    </form>
+    {% endif %}
+
+    <!-- Results -->
+    {% if report1 and report2 %}
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Article 1</h5>
+                    <p><strong>Bias:</strong> {{ report1.bias_label }} ({{ (report1.bias_score*100)|round(1) }}%)</p>
+                    <p><strong>Credibility:</strong>
+                        {% for i in range(1,6) %}
+                            {% if i <= report1.credibility_stars %}★{% else %}☆{% endif %}
+                        {% endfor %}
+                    </p>
+                    <p><strong>Highlights:</strong> {{ report1.highlighted_word_count }}</p>
+                    <div class="mt-2" style="max-height: 200px; overflow-y: auto;">
+                        <p style="white-space: pre-wrap;">{{ report1.highlighted_text | safe }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Article 2</h5>
+                    <p><strong>Bias:</strong> {{ report2.bias_label }} ({{ (report2.bias_score*100)|round(1) }}%)</p>
+                    <p><strong>Credibility:</strong>
+                        {% for i in range(1,6) %}
+                            {% if i <= report2.credibility_stars %}★{% else %}☆{% endif %}
+                        {% endfor %}
+                    </p>
+                    <p><strong>Highlights:</strong> {{ report2.highlighted_word_count }}</p>
+                    <div class="mt-2" style="max-height: 200px; overflow-y: auto;">
+                        <p style="white-space: pre-wrap;">{{ report2.highlighted_text | safe }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Radar Chart -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Comparison Chart</h5>
+            <canvas id="compareRadar" height="200"></canvas>
+        </div>
+    </div>
+
+    <div class="text-center">
+        <a href="{{ url_for('routes.compare') }}" class="btn btn-secondary">Compare Again</a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% if report1 and report2 %}
+<script>
+    const ctxRadar = document.getElementById('compareRadar').getContext('2d');
+    new Chart(ctxRadar, {
+        type: 'radar',
+        data: {
+            labels: ['Bias', 'Domain Score', 'References Score', 'Language Score'],
+            datasets: [
+                {
+                    label: 'Article 1',
+                    data: [
+                        {{ report1.bias_score }},
+                        {{ report1.credibility_raw.get("domain_score", 0) }},
+                        {{ report1.credibility_raw.get("refs_score", 0) }},
+                        {{ report1.credibility_raw.get("lang_score", 0) }}
+                    ],
+                    fill: true,
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgb(54, 162, 235)',
+                    pointBackgroundColor: 'rgb(54, 162, 235)'
+                },
+                {
+                    label: 'Article 2',
+                    data: [
+                        {{ report2.bias_score }},
+                        {{ report2.credibility_raw.get("domain_score", 0) }},
+                        {{ report2.credibility_raw.get("refs_score", 0) }},
+                        {{ report2.credibility_raw.get("lang_score", 0) }}
+                    ],
+                    fill: true,
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgb(255, 99, 132)',
+                    pointBackgroundColor: 'rgb(255, 99, 132)'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                r: {
+                    min: 0,
+                    max: 1,
+                    ticks: {
+                        stepSize: 0.2
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}

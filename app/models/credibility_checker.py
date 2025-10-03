@@ -1,51 +1,96 @@
-from transformers import pipeline
+import re
+import json
+import os
+from urllib.parse import urlparse
+from datetime import datetime
 
-_FAKE_MODEL_ID = "mrm8488/bert-tiny-finetuned-fake-news-detection"
-_SENTI_MODEL_ID = "distilbert-base-uncased-finetuned-sst-2-english"
+# Load domain reputation file
+DOMAIN_REPUTATION_PATH = os.path.join("data", "domain_reputation.json")
+if os.path.exists(DOMAIN_REPUTATION_PATH):
+    with open(DOMAIN_REPUTATION_PATH, "r", encoding="utf-8") as f:
+        DOMAIN_REPUTATION = json.load(f)
+else:
+    DOMAIN_REPUTATION = {}
 
-def _load_pipelines():
+# Emotional / unreliable markers
+EMOTIONAL_WORDS = [
+    "shocking", "unbelievable", "disaster", "miracle", "outrage", "scandal",
+    "furious", "explosive", "fake", "lie", "propaganda", "corrupt", "evil",
+    "heroic", "traitor", "patriot", "biased"
+]
+
+
+def extract_domain(text_or_url: str | None):
+    """Try to extract a domain if the input looks like a URL."""
+    if not text_or_url:  # ✅ Guard against None
+        return None
     try:
-        clf = pipeline("text-classification", model=_FAKE_MODEL_ID)  # type: ignore
-        fallback = pipeline("sentiment-analysis", model=_SENTI_MODEL_ID)  # type: ignore
-        return clf, fallback
+        parsed = urlparse(text_or_url)
+        if parsed.netloc:
+            return parsed.netloc.replace("www.", "")
     except Exception:
-        fallback = pipeline("sentiment-analysis", model=_SENTI_MODEL_ID)  # type: ignore
-        return None, fallback
+        return None
+    return None
 
-_classifier, _sentiment = _load_pipelines()
 
-def _label_from_sentiment(text: str):
-    res = _sentiment(text[:512])[0]
-    lab, score = res["label"], res["score"]
-    if lab.upper() == "NEGATIVE":
-        return "🟠 Misleading", f"Sentiment NEGATIVE ({score:.2f}); proxy.", "Share with Caution"
+def check_references(text: str):
+    """Count the number of references/links in the article text."""
+    links = re.findall(r"https?://\S+", text)
+    return len(links)
+
+
+def check_emotional_language(text: str):
+    """Count emotional markers in the text."""
+    count = 0
+    words = text.lower().split()
+    for w in words:
+        if w in EMOTIONAL_WORDS:
+            count += 1
+    return count
+
+
+def check_credibility(text: str, source: str | None = None):
+    """
+    Compute a credibility score for an article.
+    Returns a dict with 'score' (0–1), 'domain_score', 'refs_score', 'lang_score'.
+    """
+
+    # Domain-based credibility
+    domain_score = 0.5  # neutral default
+    if source:
+        domain = extract_domain(source)
+        if domain and domain in DOMAIN_REPUTATION:
+            domain_score = DOMAIN_REPUTATION[domain]
+
+    # References / citations
+    refs = check_references(text)
+    if refs >= 5:
+        refs_score = 1.0
+    elif refs >= 2:
+        refs_score = 0.7
+    elif refs == 1:
+        refs_score = 0.5
     else:
-        return "✅ Verified", f"Sentiment POSITIVE ({score:.2f}); proxy.", "Safe to Share"
+        refs_score = 0.2
 
-def classify_article(text: str) -> dict:
-    if not text or text.startswith("Error"):
-        return {"credibility_score": "🟡 Mostly True", "summary": "Parse error", "recommendation": "Caution", "explanation": []}
-
-    if _classifier:
-        try:
-            result = _classifier(text[:512])[0]
-            label, score = result["label"].upper(), result["score"]
-            if "FAKE" in label:
-                cred, summary, reco = "❌ False", f"Model: FAKE ({score:.2f})", "Do Not Share"
-            else:
-                cred, summary, reco = "✅ Verified", f"Model: REAL ({score:.2f})", "Safe to Share"
-        except Exception:
-            cred, summary, reco = _label_from_sentiment(text)
+    # Language neutrality
+    emotional_count = check_emotional_language(text)
+    if emotional_count == 0:
+        lang_score = 1.0
+    elif emotional_count < 3:
+        lang_score = 0.7
     else:
-        cred, summary, reco = _label_from_sentiment(text)
+        lang_score = 0.3
 
-    explanation, seen = [], set()
-    for w in [w for w in text.split()[:100] if w.isalpha()]:
-        if w.lower() in seen: continue
-        seen.add(w.lower())
-        try:
-            res = (_classifier or _sentiment)(w)[0]
-            explanation.append((w, float(res["score"]), str(res["label"])))
-        except: continue
-    explanation.sort(key=lambda x: x[1], reverse=True)
-    return {"credibility_score": cred, "summary": summary, "recommendation": reco, "explanation": explanation[:5]}
+    # Weighted average
+    final_score = (0.4 * domain_score) + (0.3 * refs_score) + (0.3 * lang_score)
+
+    return {
+        "score": round(final_score, 2),
+        "domain_score": domain_score,
+        "refs_score": refs_score,
+        "lang_score": lang_score,
+        "refs_found": refs,
+        "emotional_words": emotional_count,
+        "last_checked": datetime.now().strftime("%Y-%m-%d %H:%M")
+    }

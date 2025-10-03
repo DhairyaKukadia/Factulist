@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4" style="max-width: 800px;">
+    <h2>About Factulist</h2>
+    <p class="text-muted">A tool for everyday readers to quickly check bias and credibility in news articles.</p>
+
+    <h4 class="mt-4">How it Works</h4>
+    <ul>
+        <li>We analyze article text with modern language models (sentence embeddings).</li>
+        <li>A classifier predicts bias probability (Neutral, Mixed, Biased).</li>
+        <li>Credibility scores come from source analysis + text features.</li>
+        <li>Results are simplified into traffic-light bias badges and star ratings.</li>
+    </ul>
+
+    <h4 class="mt-4">What Factulist is (and isn’t)</h4>
+    <ul>
+        <li><strong>Is:</strong> A guide to help spot patterns of bias and credibility.</li>
+        <li><strong>Isn’t:</strong> A replacement for professional fact-checking.</li>
+    </ul>
+
+    <h4 class="mt-4">Privacy</h4>
+    <p>Your inputs are processed only for analysis. Reports are stored locally in your browser history page (TinyDB), not shared externally.</p>
+
+    <h4 class="mt-4">Disclaimer</h4>
+    <p>No AI tool is 100% accurate. Factulist provides insights to help you think critically, not definitive judgments.</p>
+</div>
+{% endblock %}
